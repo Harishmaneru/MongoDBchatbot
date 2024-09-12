@@ -5,8 +5,8 @@ import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase"
 import { OpenAIEmbeddings } from "@langchain/openai";
 import dotenv from "dotenv";
 dotenv.config();
-const ImpuestosPdfPath = "./src/docs/Generative-AI.pdf";
-const loader = new PDFLoader(ImpuestosPdfPath, { splitPages: false, parsedItemSeparator: "" });
+const DataPdfPath = "./src/docs/Generative-AI.pdf";
+const loader = new PDFLoader(DataPdfPath, { splitPages: false, parsedItemSeparator: "" });
 function eliminarEspaciosExtras(texto) {
     let lineas = texto.split('\n');
     lineas = lineas.map(linea => linea.replace(/\s+/g, ' ').trim());

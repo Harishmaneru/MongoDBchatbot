@@ -1,4 +1,4 @@
-import OpenAI from 'openai'; // Use import instead of require
+import OpenAI from 'openai'; 
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
@@ -6,10 +6,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 dotenv.config();
-
-
-
-// Supabase initialization
 import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
