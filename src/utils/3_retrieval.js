@@ -48,7 +48,7 @@ const answerPrompt = ChatPromptTemplate.fromTemplate(answerTemplate);
 
 const chain = standaloneQuestionPrompt.pipe(llm).pipe(new StringOutputParser()).pipe(retriever).pipe(pageContentCombinator)
 
-const response = await chain.invoke({ userQuestion: "cuales son las categorias de impuestos?"});
+const response = await chain.invoke({ userQuestion: "What are the categories of taxes??"});
 
 console.log(response);
-S
+

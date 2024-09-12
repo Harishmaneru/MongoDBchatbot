@@ -1,50 +1,65 @@
-import express, { response } from 'express';
+import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { chatAgent } from './6_agent.js';
+import { chatAgent } from './utils/6_agent.js';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+dotenv.config();
+
+
+// Supabase initialization
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Supabase URL or Key is missing. Please check your .env file.');
+  process.exit(1);
+}
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Middleware para servir archivos estáticos (opcional)
+// Middleware to serve static files
 app.use(express.static('src/public'));
 
-// Obtener el directorio de este módulo
+// Get the directory of this module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configura una ruta básica
+// Set up a basic route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/home.html'));
 });
 
-
-// Escucha las conexiones de los clientes
+// Listen for client connections
 io.on('connection', (socket) => {
-    console.log('Un usuario se ha conectado');
+    console.log('A user has connected');
 
-    // Escucha eventos personalizados
+    // Listen for chat messages
     socket.on('chat message', async (data) => {
-        console.log('Mensaje: ' + data.question);
+        console.log('Message received:', data.question);
 
-        const response = await chatAgent({ question: data.question, history: data.history });
-
-        console.log('Respuesta: ' + response);
-        // Envía el mensaje a todos los clientes conectados
-        socket.emit('chat message', response);``
+        try {
+            const response = await chatAgent({ question: data.question, history: data.history });
+            console.log('Response:', response);
+            socket.emit('chat message', response);
+        } catch (error) {
+            console.error('Error processing message:', error);
+            socket.emit('error', 'An error occurred while processing your message.');
+        }
     });
 
-    // Desconexión del cliente
+    // Client disconnect event
     socket.on('disconnect', () => {
-        console.log('Un usuario se ha desconectado');
+        console.log('A user has disconnected');
     });
 });
 
-// Configura el puerto del servidor
+// Set up the server port
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Servidor escuchando en http://localhost:${PORT}`);
+    console.log(`Server listening at http://localhost:${PORT}`);
 });

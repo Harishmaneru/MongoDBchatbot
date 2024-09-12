@@ -5,8 +5,8 @@ import { RunnableSequence, RunnablePassthrough } from "@langchain/core/runnables
 
 import dotenv from "dotenv";
 
-import { retriever } from "./utils/retriever.js";
-import { pageContentCombinator } from "./utils/filecombiner.js";
+import { retriever } from "./retriever.js";
+import { pageContentCombinator } from "./filecombiner.js";
 
 dotenv.config();
 
@@ -53,7 +53,7 @@ const chain = RunnableSequence.from([
     answerChain,
 ])
 
-const response = await chain.invoke({ question: "cuales son las categorias de impuestos?"});
+const response = await chain.invoke({ question: "What are the tax categories?"});
 
 console.log(response);
 

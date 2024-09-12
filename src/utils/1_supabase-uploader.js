@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const ImpuestosPdfPath = "./src/docs/impuestos.pdf";
+const ImpuestosPdfPath = "./src/docs/Generative-AI.pdf";
 const loader = new PDFLoader(ImpuestosPdfPath, { splitPages: false, parsedItemSeparator: "" });
 
 

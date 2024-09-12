@@ -5,8 +5,8 @@ import { RunnableSequence, RunnablePassthrough } from "@langchain/core/runnables
 
 import dotenv from "dotenv";
 
-import { retriever } from "./utils/retriever.js";
-import { pageContentCombinator } from "./utils/filecombiner.js";
+import { retriever } from "./retriever.js";
+import { pageContentCombinator } from "./filecombiner.js";
 
 dotenv.config();
 
