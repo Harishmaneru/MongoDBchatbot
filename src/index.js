@@ -1,15 +1,16 @@
+import OpenAI from 'openai'; // Use import instead of require
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { chatAgent } from './utils/6_agent.js';
-import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 dotenv.config();
 
 
+
 // Supabase initialization
+import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 if (!supabaseUrl || !supabaseKey) {
@@ -18,6 +19,34 @@ if (!supabaseUrl || !supabaseKey) {
 }
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
+async function getResponseFromAI(message) {
+    try {
+        // Assuming `message` is an object that contains a `question` property
+        const userMessage = message.question;  // Extract the user's question as a string
+
+        if (typeof userMessage !== 'string') {
+            throw new Error("Invalid input: message content should be a string.");
+        }
+
+        const response = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [{ role: "user", content: userMessage }],  // Pass the extracted string here
+        });
+
+        return response.choices[0].message.content;
+    } catch (error) {
+        console.error('Error with OpenAI API:', error);
+        throw new Error("There was an issue communicating with the AI.");
+    }
+}
+
+
+
+// Express and Socket.io server setup
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -39,16 +68,14 @@ io.on('connection', (socket) => {
     console.log('A user has connected');
 
     // Listen for chat messages
-    socket.on('chat message', async (data) => {
-        console.log('Message received:', data.question);
-
+    socket.on('chat message', async (msg) => {
         try {
-            const response = await chatAgent({ question: data.question, history: data.history });
-            console.log('Response:', response);
-            socket.emit('chat message', response);
+          console.log('Message received:', msg);
+          const response = await getResponseFromAI(msg);
+          socket.emit('chat message', response);
         } catch (error) {
-            console.error('Error processing message:', error);
-            socket.emit('error', 'An error occurred while processing your message.');
+          console.error('Error processing message:', error);
+          socket.emit('chat message', "I'm sorry, I encountered an error processing your message.");
         }
     });
 

@@ -15,10 +15,10 @@ html, body {
 
 main {    
     background-color: slategrey;
-    background-image: url('images/scrimba-bg.jpeg');
+    /* background-image: url('images/scrimba-bg.jpeg'); */
     background-size: cover;
     background-repeat: no-repeat;
-    height: 100vh;
+    /* height: 100vh; */
     display: flex;
     align-items: center;
     justify-content: center;

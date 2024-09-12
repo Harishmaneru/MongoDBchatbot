@@ -24,6 +24,7 @@
     "express-handlebars": "^8.0.1",
     "langchain": "^0.2.16",
     "mongodb": "^6.8.1",
+    "openai": "^4.59.0",
     "pdf-parse": "^1.1.1",
     "socket.io": "^4.7.5"
   }
