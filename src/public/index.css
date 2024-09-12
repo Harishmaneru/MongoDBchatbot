@@ -1,4 +1,4 @@
-:root {
+/* :root {
     --border-rad-lg: 15px;
     --light-text: #fefefe;
 }
@@ -15,16 +15,16 @@ html, body {
 
 main {    
     background-color: slategrey;
-    /* background-image: url('images/scrimba-bg.jpeg'); */
+
     background-size: cover;
     background-repeat: no-repeat;
-    /* height: 100vh; */
+
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-/* chatbot elements */
+
 
 .chatbot-container {
     background-color: #171f26;
@@ -54,7 +54,7 @@ main {
     margin: 1em 0;
 }
 
-/* stop ugly scroll bar on some browsers */
+
 .chatbot-conversation-container::-webkit-scrollbar {
     display: none;
 }
@@ -118,11 +118,11 @@ button {
     display: block;
 }
 
-/* text */
+
 .sub-heading {
     color: #999999;
     font-family: 'Roboto', sans-serif;
     font-size: 12px;
     text-transform: uppercase;
     margin: 0;
-}
+} */
