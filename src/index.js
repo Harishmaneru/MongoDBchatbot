@@ -50,9 +50,9 @@ async function getResponseFromAI(message) {
 
 
 const options = {
-    key: fs.readFileSync('./onepgr.com.key', 'utf8'),
-    cert: fs.readFileSync('./STAR_onepgr_com.crt', 'utf8'),
-    ca: fs.readFileSync('./STAR_onepgr_com.ca-bundle', 'utf8')
+    key: fs.readFileSync('.src/onepgr.com.key', 'utf8'),
+    cert: fs.readFileSync('.src/STAR_onepgr_com.crt', 'utf8'),
+    ca: fs.readFileSync('.src/STAR_onepgr_com.ca-bundle', 'utf8')
 };
 
 
