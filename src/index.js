@@ -1,11 +1,19 @@
-import OpenAI from 'openai'; 
+import OpenAI from 'openai';
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import https from 'https';
+import fs from 'fs';
+import cors from 'cors';
+
 dotenv.config();
+const app = express();
+app.use(cors());
+app.use(express.json());
+
 import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
@@ -43,7 +51,7 @@ async function getResponseFromAI(message) {
 
 
 // Express and Socket.io server setup
-const app = express();
+
 const server = http.createServer(app);
 const io = new Server(server);
 
@@ -80,6 +88,15 @@ io.on('connection', (socket) => {
         console.log('A user has disconnected');
     });
 });
+
+
+const options = {
+    key: fs.readFileSync('./onepgr.com.key', 'utf8'),
+    cert: fs.readFileSync('./STAR_onepgr_com.crt', 'utf8'),
+    ca: fs.readFileSync('./STAR_onepgr_com.ca-bundle', 'utf8')
+};
+
+
 
 // Set up the server port
 const PORT = process.env.PORT || 3000;
