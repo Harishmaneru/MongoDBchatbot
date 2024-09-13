@@ -52,7 +52,7 @@ async function getResponseFromAI(message) {
 
 // Express and Socket.io server setup
 
-const server = http.createServer(app);
+const server = https.createServer(app);
 const io = new Server(server);
 
 // Middleware to serve static files
