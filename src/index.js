@@ -103,7 +103,7 @@ const PORT = process.env.PORT || 3002;
 // server.listen(PORT, () => {
 //     console.log(`Server listening at http://localhost:${PORT}`);
 // });
-app.listen(3002, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
   });
   
