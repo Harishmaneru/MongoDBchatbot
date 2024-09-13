@@ -49,11 +49,20 @@ async function getResponseFromAI(message) {
 }
 
 
+const options = {
+    key: fs.readFileSync('./onepgr.com.key', 'utf8'),
+    cert: fs.readFileSync('./STAR_onepgr_com.crt', 'utf8'),
+    ca: fs.readFileSync('./STAR_onepgr_com.ca-bundle', 'utf8')
+};
+
+
+const server = https.createServer(options, app);
+const io = new Server(server);
 
 // Express and Socket.io server setup
 
-const server = https.createServer(app);
-const io = new Server(server);
+// const server = http.createServer(app);
+
 
 // Middleware to serve static files
 app.use(express.static('src/public'));
@@ -89,12 +98,6 @@ io.on('connection', (socket) => {
     });
 });
 
-
-const options = {
-    key: fs.readFileSync('./onepgr.com.key', 'utf8'),
-    cert: fs.readFileSync('./STAR_onepgr_com.crt', 'utf8'),
-    ca: fs.readFileSync('./STAR_onepgr_com.ca-bundle', 'utf8')
-};
 
 
 
