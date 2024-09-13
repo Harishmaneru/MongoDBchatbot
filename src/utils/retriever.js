@@ -20,7 +20,7 @@ const vectorStore = new SupabaseVectorStore(embeddings, {
     queryName: "match_documents",
 });
 
-const retriever = vectorStore.asRetriever(); /// you can assign a number of documents to retrieve as an argument to the asRetriever method.
+const retriever = vectorStore.asRetriever(); 
 
 export { retriever };
 
