@@ -26,3 +26,8 @@ build/
 # Ignore OS generated files
 .DS_Store
 Thumbs.db
+
+# Ignore SSL certificate files
+*.key
+*.crt
+*.ca-bundle

@@ -119,6 +119,8 @@
 //     console.log(`Server running on port ${PORT}`);
 // });
 
+
+  
 import { OpenAI } from 'openai';
 import express from 'express';
 import http from 'http';
@@ -308,17 +310,18 @@ async function createCustomRetrievalChain(question) {
     }
 }
 
+
 async function getResponseFromAI(message) {
     try {
         const userMessage = message.question.toLowerCase();
 
-        // Check for general greetings
-        if (/\b(hi|hello|hey)\b/.test(userMessage)) {
+  
+        if (userMessage.includes('hi') || userMessage.includes('hello') || userMessage.includes('hey')) {
             return 'Hello! How can I assist you today?';
         }
 
-        // Check for name introductions
-        const nameMatch = userMessage.match(/\bi(?:'| a)m (\w+)/i);
+        // Personalized greeting for introductions
+        const nameMatch = userMessage.match(/i(?:'| a)m (\w+)/i);
         const greetingMatch = userMessage.match(/\bgood (morning|afternoon|evening)\b/i);
 
         if (nameMatch) {
@@ -331,7 +334,6 @@ async function getResponseFromAI(message) {
             }
         }
 
-        // Check for time-based greetings without name
         if (greetingMatch) {
             const timeOfDay = greetingMatch[1];
             return `Good ${timeOfDay}! How can I assist you today?`;
@@ -340,6 +342,7 @@ async function getResponseFromAI(message) {
         // If no greetings or names are detected, proceed with retrieval
         const response = await createCustomRetrievalChain(userMessage);
         return response;
+
     } catch (error) {
         console.error('Error with AI response:', error);
         throw new Error("There was an issue communicating with the AI.");
