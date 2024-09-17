@@ -27,7 +27,7 @@ build/
 .DS_Store
 Thumbs.db
 
-# Ignore SSL certificate files
-*.key
-*.crt
-*.ca-bundle
+# # Ignore SSL certificate files
+# *.key
+# *.crt
+# *.ca-bundle
