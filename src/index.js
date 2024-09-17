@@ -124,6 +124,7 @@
 import { OpenAI } from 'openai';
 import express from 'express';
 import http from 'http';
+import https from 'https';
 import { Server } from 'socket.io';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -357,7 +358,7 @@ const options = {
 };
 
 // Create server
-const server = http.createServer(options, app);
+const server = https.createServer(options, app);
 const io = new Server(server);
 
 // Serve static files
