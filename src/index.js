@@ -339,7 +339,7 @@ async function getResponseFromAI(message) {
     }
 }
 
-const server = http.createServer(app);
+const server = https.createServer(app);
 const io = new Server(server);
 
 // Serve static files
