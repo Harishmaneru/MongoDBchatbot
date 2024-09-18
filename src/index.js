@@ -122,6 +122,7 @@
 import { OpenAI } from 'openai';
 import express from 'express';
 import http from 'http';
+import https from 'https';
 import { Server } from 'socket.io';
 import path from 'path';
 import dotenv from 'dotenv';
