@@ -8,6 +8,7 @@ import { getResponseFromAI } from './src/vectorstore/retrieval.js';
 import { extractTextFromFile, processAndStoreDocument } from './src/vectorstore/documentProcessing.js'; // Document processing functions
 import { Server } from 'socket.io';
 import http from 'http';
+import https from 'https';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
