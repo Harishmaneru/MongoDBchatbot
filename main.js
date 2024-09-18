@@ -60,7 +60,7 @@ app.post('/KnowledgeBase', upload.single('file'), async (req, res) => {
 });
 
 
-const server = https.createServer(app);
+const server = http.createServer(app);
 const io = new Server(server);
 
  
