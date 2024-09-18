@@ -119,12 +119,9 @@
 //     console.log(`Server running on port ${PORT}`);
 // });
 
-
-  
 import { OpenAI } from 'openai';
 import express from 'express';
 import http from 'http';
-import https from 'https';
 import { Server } from 'socket.io';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -148,18 +145,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
-// Memory-based vector store to store vectors and documents in memory
-const vectorStore = new MemoryVectorStore(new OpenAIEmbeddings());
+// Initialize OpenAIEmbeddings
+const embeddings = new OpenAIEmbeddings();
 
-// Function to add vectors and documents to the vector store
-async function addDocumentsToStore(docs) {
-    await vectorStore.addDocuments(docs);
-}
+// Initialize MemoryVectorStore with embeddings
+const vectorStore = new MemoryVectorStore(embeddings);
 
 // Ensure the uploads folder exists
 const uploadDir = path.join(__dirname, 'uploads');
@@ -168,7 +162,6 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // Set up multer for file uploads
-
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, uploadDir);
@@ -177,7 +170,7 @@ const storage = multer.diskStorage({
         cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
     }
 });
-console.log(storage);
+
 const upload = multer({
     storage: storage,
     limits: { fileSize: 20 * 1024 * 1024 }  
@@ -189,12 +182,9 @@ async function splitTextIntoChunks(text) {
         chunkOverlap: 200,   
     });
 
-    const chunks = await splitter.createDocuments([text]);
-    return chunks;
+    return await splitter.splitText(text);
 }
 
-
-// Function to extract text from uploaded files
 async function extractTextFromFile(filePath, originalName) {
     try {
         console.log('Extracting text from file:', filePath);
@@ -253,42 +243,39 @@ app.post('/data', upload.single('file'), async (req, res) => {
         // Extract text from the uploaded file
         const text = await extractTextFromFile(file.path, file.originalname);
 
-        // Split text into chunks before creating embeddings
+        // Split text into chunks
         const chunks = await splitTextIntoChunks(text);
 
-        // Create Document objects for each chunk and add them to the vector store
+        // Create Document objects for each chunk
         const docs = chunks.map((chunk, index) => new Document({
-            pageContent: chunk.pageContent,
+            pageContent: chunk,
             metadata: { fileName: file.originalname, chunkIndex: index, fileType: path.extname(file.originalname) }
         }));
 
-        await addDocumentsToStore(docs);
+        // Add documents to the vector store
+        await vectorStore.addDocuments(docs);
 
-        console.log('Document chunks added to vectorStore');
+        console.log(`Added ${docs.length} document chunks to vectorStore`);
 
-        //  remove the file after processing
+        // Remove the file after processing
         fs.unlinkSync(file.path);
 
         res.status(200).send({
-            message: 'File added to the vector store successfully',
+            message: 'File processed and added to the vector store successfully',
             fileName: file.originalname,
             fileSize: file.size,
-            chunkCount: docs.length,
-            documentMetadata: docs.map(doc => doc.metadata)
+            chunkCount: docs.length
         });
     } catch (error) {
-        console.error('Error uploading file:', error);
+        console.error('Error processing file:', error);
         res.status(500).send({ message: 'Error processing the file', error: error.toString() });
     }
 });
 
-
-
-app.post('/upload-test', upload.none(), (req, res) => {
-    console.log('Test upload body:', req.body);
-    res.send('Test upload received');
-});
-
+// Add this method to check the document count
+MemoryVectorStore.prototype.getDocumentCount = function() {
+    return this.memoryVectors ? this.memoryVectors.length : 0;
+};
 
 async function createCustomRetrievalChain(question) {
     const relevantDocs = await vectorStore.similaritySearch(question, 5);
@@ -311,12 +298,14 @@ async function createCustomRetrievalChain(question) {
     }
 }
 
-
 async function getResponseFromAI(message) {
     try {
         const userMessage = message.question.toLowerCase();
 
-  
+        // Log the current document count
+        const documentCount = vectorStore.getDocumentCount();
+        console.log(`Current document count in vector store: ${documentCount}`);
+
         if (userMessage.includes('hi') || userMessage.includes('hello') || userMessage.includes('hey')) {
             return 'Hello! How can I assist you today?';
         }
@@ -350,15 +339,7 @@ async function getResponseFromAI(message) {
     }
 }
 
-
-const options = {
-    key: fs.readFileSync('./onepgr.com.key', 'utf8'),
-    cert: fs.readFileSync('./STAR_onepgr_com.crt', 'utf8'),
-    ca: fs.readFileSync('./STAR_onepgr_com.ca-bundle', 'utf8')
-};
-
-// Create server
-const server = https.createServer(options, app);
+const server = http.createServer(app);
 const io = new Server(server);
 
 // Serve static files
@@ -385,7 +366,6 @@ io.on('connection', (socket) => {
         console.log('A user has disconnected');
     });
 });
-
 
 const PORT = process.env.PORT || 3002;
 server.listen(PORT, '0.0.0.0', () => {
