@@ -1,75 +1,74 @@
-import fs from 'fs';
-import pdfParse from 'pdf-parse';
-import csv from 'csv-parser';
-import mammoth from 'mammoth';
-import { OpenAIEmbeddings } from '@langchain/openai';
+import { spawn } from 'child_process';
 import { initializeMongoVectorStore } from './mongoVectorStore.js';
+import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-export async function extractTextFromFile(filePath, originalName) {
-    try {
-        console.log(`Extracting text from: ${originalName}`);
-        const extension = originalName.split('.').pop().toLowerCase();
-        let extractedText = '';
-        switch (extension) {
-            case 'pdf':
-                console.log('Processing PDF file...');
-                const pdfBuffer = fs.readFileSync(filePath);
-                const pdfData = await pdfParse(pdfBuffer);
-                extractedText = pdfData.text;
-                console.log(`Extracted ${extractedText.length} characters from PDF.`);
-                break;
-            case 'csv':
-                console.log('Processing CSV file...');
-                extractedText = await new Promise((resolve, reject) => {
-                    const results = [];
-                    fs.createReadStream(filePath)
-                        .pipe(csv())
-                        .on('data', (data) => results.push(JSON.stringify(data)))
-                        .on('end', () => resolve(results.join('\n')))
-                        .on('error', reject);
-                });
-                console.log(`Extracted ${extractedText.length} characters from CSV.`);
-                break;
-            case 'docx':
-                console.log('Processing DOCX file...');
-                const mammothResult = await mammoth.extractRawText({ path: filePath });
-                extractedText = mammothResult.value;
-                console.log(`Extracted ${extractedText.length} characters from DOCX.`);
-                break;
-            default:
-                throw new Error(`Unsupported file type: ${extension}`);
-        }
+import fs from 'fs';
+import { Configuration, OpenAIApi } from 'openai';
 
-        return extractedText;
+ 
+const configuration = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,  
+});
+const openai = new OpenAIApi(configuration);
+
+ 
+function convertVideoToAudio(videoPath, outputAudioPath) {
+    return new Promise((resolve, reject) => {
+        const ffmpeg = spawn('ffmpeg', ['-i', videoPath, '-q:a', '0', '-map', 'a', outputAudioPath]);
+
+        ffmpeg.on('close', (code) => {
+            if (code === 0) {
+                resolve(outputAudioPath);
+            } else {
+                reject(new Error(`FFmpeg failed with exit code ${code}`));
+            }
+        });
+    });
+}
+
+ 
+export async function transcribeAudioToText(audioPath) {
+    try {
+        const response = await openai.createTranscription(
+            fs.createReadStream(audioPath),  
+            'whisper-1'  
+        );
+        return response.data.text;   
     } catch (error) {
-        console.error('Error extracting text from file:', error);
+        console.error('Error transcribing audio:', error);
         throw error;
     }
 }
 
-// Function to process and store the document in MongoDB
-export async function processAndStoreDocument(text, fileName) {
+ 
+export async function processAudioVideo(filePath, originalName) {
     try {
-        const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 2000, chunkOverlap: 200 });
-        const chunks = await splitter.splitText(text);
+        let textContent = '';
 
-        const docs = chunks.map((chunk, index) => ({
-            pageContent: chunk,
-            metadata: { fileName, chunkIndex: index }
-        }));
+     
+        if (originalName.endsWith('.mp4') || originalName.endsWith('.mkv')) {
+            const audioPath = filePath.replace(/\.[^/.]+$/, ".mp3");
+            await convertVideoToAudio(filePath, audioPath);  
+            textContent = await transcribeAudioToText(audioPath);   
+            fs.unlinkSync(audioPath);  
+        } else if (originalName.endsWith('.mp3') || originalName.endsWith('.wav')) {
+            textContent = await transcribeAudioToText(filePath);  
+        } else {
+            throw new Error('Unsupported file format for audio/video processing');
+        }
 
-        const embeddings = new OpenAIEmbeddings();
-        const vectorStore = await initializeMongoVectorStore();
+       
+        const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 200 });
+        const chunks = await splitter.splitText(textContent);
 
-        // Add document chunks to the MongoDB vector store
-        await vectorStore.addDocuments(docs);
-        console.log(`Added ${docs.length} chunks from ${fileName} to vector store`);
         
-        // Return docs if needed for further processing or logging
-        return docs;
+        const vectorStore = await initializeMongoVectorStore(new OpenAIEmbeddings());
+        await vectorStore.addDocuments(chunks);
+
+        return chunks;
 
     } catch (error) {
-        console.error('Error processing and storing document:', error);
+        console.error('Error processing audio/video file:', error);
         throw error;
     }
 }
