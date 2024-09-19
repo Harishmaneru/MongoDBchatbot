@@ -8,10 +8,8 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 export async function extractTextFromFile(filePath, originalName) {
     try {
         console.log(`Extracting text from: ${originalName}`);
-        
         const extension = originalName.split('.').pop().toLowerCase();
         let extractedText = '';
-
         switch (extension) {
             case 'pdf':
                 console.log('Processing PDF file...');

@@ -67,7 +67,7 @@
             flex-grow: 1;
             overflow-y: auto;
             padding: 15px;
-            font-size: 14px;
+            font-size: 11px;
         }
 
         .speech {
@@ -78,39 +78,51 @@
             border-radius: 18px;
             word-wrap: break-word;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-            white-space: pre-wrap; 
+            white-space: pre-wrap;
+
         }
 
         .speech-human {
             background-color: #f0f0f0;
             float: right;
-             border-bottom-right-radius: 0.1px; 
+            border-bottom-right-radius: 0.1px;
+        }
+
+
+        .speech ul,
+        .speech ol {
+            padding-left: 20px;
+            margin: 5px 0;
+            list-style-position: inside;
+        }
+
+        .speech li {
+            margin-bottom: 5px;
+        }
+
+        .speech-ai ul {
+            list-style-type: disc;
+        }
+
+        .speech-ai ol {
+            list-style-type: decimal;
+        }
+
+        .speech strong {
+            font-weight: bold;
         }
 
         .speech-ai {
-            background-color: #0084ff;
+            background-color: #0084ffb5;
             color: #fff;
             float: left;
             border-bottom-left-radius: 0.1px;
+            padding: 10px 15px;
         }
-        ul {
-            list-style-type: none; 
-            padding-left: 15px;  
-            margin: 5px 0;  
-        }
-        
-        ul li {
-            position: relative;
-            margin-bottom: 5px; /* Reduce space between list items */
-        }
-        
-        ul li::before {
-            content: "\25A0"; /* Unicode for a filled square */
-            color: white; /* Match the text color */
-            font-size: 0.8em; /* Adjust size as needed */
-            position: absolute;
-            left: -15px;
-            top: 2px; /* Adjust vertical alignment */
+
+
+        .speech-ai ul li::marker {
+            color: white;
         }
 
         .chatbot-input-container {
@@ -171,7 +183,7 @@
             background-color: #0084ff;
             border-radius: 50%;
             margin: 0 5px;
-            animation: bounce 0.6s infinite alternate;
+            animation: bounce 0.4s infinite alternate;
         }
 
         .loading-dot:nth-child(2) {
@@ -226,6 +238,7 @@
     </style>
 </head>
 <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+
 <body>
     <div class="chatbot-icon" id="chatbot-icon">
         <img src="data:image/png;base64,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"
@@ -286,14 +299,12 @@
             }
         }
 
+
         function addMessageToChat(sender, message) {
             const speechBubble = document.createElement('div');
             speechBubble.classList.add('speech', `speech-${sender}`);
-            
-    
-            message = convertMarkdownLists(message);
-            
- 
+
+            // Use innerHTML to allow HTML content
             speechBubble.innerHTML = message;
 
             chatbotConversation.appendChild(speechBubble);
@@ -302,19 +313,6 @@
             convState.push(message);
         }
 
-        function convertMarkdownLists(text) {
-            // Convert numbered lists
-            text = text.replace(/^\d+\.\s(.+)$/gm, '<li>$1</li>');
-            text = text.replace(/(<li>.*<\/li>)\n(?!<li>)/g, '$1</ol>\n');
-            text = text.replace(/(?<!<\/ol>\n)(<li>)/g, '<ol>$1');
-            
-            // Convert bullet point lists
-            text = text.replace(/^-\s(.+)$/gm, '<li>$1</li>');
-            text = text.replace(/(<li>.*<\/li>)\n(?!<li>)/g, '$1</ul>\n');
-            text = text.replace(/(?<!<\/ul>\n)(<li>)/g, '<ul>$1');
-            
-            return text;
-        }
         function showLoadingAnimation() {
             loadingAnimation.style.display = 'flex';
         }
@@ -341,7 +339,6 @@
             }
             return formattedHistory;
         }
-
 
         socket.on('connect_error', () => {
             hideLoadingAnimation();
