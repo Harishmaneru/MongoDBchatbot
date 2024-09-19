@@ -7,6 +7,7 @@ import fs from 'fs';
 import http from 'http';   
 import https from 'https';
 import indexRouter from './src/routes/index.js';  
+import { getResponseFromAI } from './src/vectorstore/retrieval.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
