@@ -8,23 +8,14 @@ import http from 'http';
 import https from 'https';
 import indexRouter from './src/routes/index.js';  
 import { getResponseFromAI } from './src/vectorstore/retrieval.js';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
-
- 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
- 
 app.use(express.static(path.join(__dirname, 'src', 'public')));
-
- 
 app.use('/', indexRouter);
-
- 
 const server = http.createServer(app);   
 const io = new Server(server);
 

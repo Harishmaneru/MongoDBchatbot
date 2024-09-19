@@ -5,7 +5,20 @@ import { extractTextFromFile, processAudioVideo } from '../vectorstore/documentP
 import { createCustomRetrievalChain } from '../vectorstore/retrieval.js';
 
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' });   
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/'); // Save to 'uploads' folder
+    },
+    filename: function (req, file, cb) {
+        // Extract original file extension
+        const fileExtension = file.originalname.split('.').pop();
+        // Use original name or any other naming scheme
+        cb(null, `${file.fieldname}-${Date.now()}.${fileExtension}`);
+    }
+});
+
+const upload = multer({ storage: storage }); // Use diskStorage for custom behavior
+ 
  
 router.post('/KnowledgeBase', upload.single('file'), async (req, res) => {
     try {
