@@ -16,6 +16,7 @@
     "nodemon": "^3.1.4"
   },
   "dependencies": {
+    
     "@langchain/community": "^0.2.33",
     "@langchain/core": "^0.3.1",
     "@langchain/mongodb": "^0.1.0",
