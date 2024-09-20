@@ -7,19 +7,19 @@ import OpenAI from 'openai';
 import path from 'path';
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,  // Ensure your API key is correctly set
+    apiKey: process.env.OPENAI_API_KEY,   
 });
 
 
 function convertVideoToAudio(videoPath, outputAudioPath) {
     return new Promise((resolve, reject) => {
-        // Avoid appending `.mp3` again if it already has that extension
+       
         const outputPathWithExtension = outputAudioPath.endsWith('.mp3') ? outputAudioPath : `${outputAudioPath}.mp3`;
 
         const ffmpeg = spawn('ffmpeg', ['-i', videoPath, '-q:a', '0', '-map', 'a', outputPathWithExtension]);
 
         ffmpeg.stderr.on('data', (data) => {
-            console.error(`FFmpeg error output: ${data}`);
+            console.log(`FFmpeg output: ${data}`);
         });
 
         ffmpeg.on('close', (code) => {
@@ -37,7 +37,35 @@ function convertVideoToAudio(videoPath, outputAudioPath) {
     });
 }
 
+function splitAudioFile(inputPath, outputDir, chunkSizeMB = 20) {
+    return new Promise((resolve, reject) => {
+        const chunkDuration = chunkSizeMB * 60;  
+        const outputPattern = path.join(outputDir, 'chunk_%03d.mp3');
 
+        const ffmpeg = spawn('ffmpeg', [
+            '-i', inputPath,
+            '-f', 'segment',
+            '-segment_time', chunkDuration,
+            '-c', 'copy',
+            outputPattern
+        ]);
+
+        ffmpeg.stderr.on('data', (data) => {
+            console.log(`FFmpeg: ${data}`);
+        });
+
+        ffmpeg.on('close', (code) => {
+            if (code === 0) {
+                fs.readdir(outputDir, (err, files) => {
+                    if (err) reject(err);
+                    else resolve(files.filter(file => file.startsWith('chunk_')).map(file => path.join(outputDir, file)));
+                });
+            } else {
+                reject(new Error(`FFmpeg process exited with code ${code}`));
+            }
+        });
+    });
+}
 
 export async function transcribeAudioToText(audioPath) {
     try {
@@ -53,7 +81,7 @@ export async function transcribeAudioToText(audioPath) {
             model: 'whisper-1',
         });
 
-        console.log('Raw API response:', JSON.stringify(response, null, 2));
+      //  console.log('Raw API response:', JSON.stringify(response, null, 2));
 
         if (!response || !response.text) {
             throw new Error('Unexpected API response format');
@@ -74,10 +102,9 @@ export async function extractTextFromFile(filePath) {
         return content;
     } catch (error) {
         console.error('Error reading file:', error);
-        throw error;
+        throw error;s
     }
 }
-
 export async function processAudioVideo(filePath, originalName) {
     try {
         let textContent = '';
@@ -85,37 +112,58 @@ export async function processAudioVideo(filePath, originalName) {
         if (originalName.endsWith('.mp4') || originalName.endsWith('.mkv')) {
             const audioPath = filePath.replace(/\.[^/.]+$/, ".mp3");
             await convertVideoToAudio(filePath, audioPath);
-            textContent = await transcribeAudioToText(audioPath);
-            fs.unlinkSync(audioPath);
+            
+          
+            const tempDir = path.join(path.dirname(audioPath), 'temp_chunks');
+            fs.mkdirSync(tempDir, { recursive: true });
+            const audioChunks = await splitAudioFile(audioPath, tempDir);
+
+           
+            for (const chunk of audioChunks) {
+                const chunkText = await transcribeAudioToText(chunk);
+                textContent += chunkText + ' ';
+                fs.unlinkSync(chunk); 
+            }
+
+            fs.rmdirSync(tempDir);  
+            fs.unlinkSync(audioPath);  
         } else if (originalName.endsWith('.mp3') || originalName.endsWith('.wav')) {
-            textContent = await transcribeAudioToText(filePath);
+           
+            const tempDir = path.join(path.dirname(filePath), 'temp_chunks');
+            fs.mkdirSync(tempDir, { recursive: true });
+            const audioChunks = await splitAudioFile(filePath, tempDir);
+
+          
+            for (const chunk of audioChunks) {
+                const chunkText = await transcribeAudioToText(chunk);
+                textContent += chunkText + ' ';
+                fs.unlinkSync(chunk);  
+            }
+
+            fs.rmdirSync(tempDir);  
         } else {
             throw new Error('Unsupported file format for audio/video processing');
         }
 
-        // Ensure textContent is not empty
         if (!textContent || textContent.trim().length === 0) {
             throw new Error('Transcription resulted in empty text');
         }
 
         console.log('Transcribed text:', textContent);
 
-        // Split text into chunks
+  
         const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 200 });
         const chunks = await splitter.splitText(textContent);
 
         console.log('Number of chunks:', chunks.length);
         console.log('First chunk:', chunks[0]);
 
-        // Ensure chunks are not empty
         if (chunks.length === 0) {
             throw new Error('Text splitting resulted in no chunks');
         }
 
-        // Initialize and store in MongoDB vector store
         const vectorStore = await initializeMongoVectorStore(new OpenAIEmbeddings());
         
-        // Convert chunks to the format expected by addDocuments
         const documents = chunks.map(chunk => ({
             pageContent: chunk,
             metadata: { source: originalName }
