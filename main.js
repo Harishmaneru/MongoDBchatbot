@@ -16,7 +16,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'src', 'public')));
 app.use('/', indexRouter);
-const server = http.createServer(app);   
+const server = https.createServer(app);   
 const io = new Server(server);
 
 io.on('connection', (socket) => {
