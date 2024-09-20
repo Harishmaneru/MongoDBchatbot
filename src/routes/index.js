@@ -1,7 +1,8 @@
 import express from 'express';
 import multer from 'multer';
 import fs from 'fs';
-import { extractTextFromFile, processAudioVideo } from '../vectorstore/documentProcessing.js';
+
+import { extractTextFromFile, processAudioVideo, processAndStoreDocument } from '../vectorstore/documentProcessing.js';
 import { createCustomRetrievalChain } from '../vectorstore/retrieval.js';
 
 const router = express.Router();

@@ -5,6 +5,7 @@ import path from 'path';
 import { Server } from 'socket.io';
 import fs from 'fs';
 import https from 'https';
+import http from 'http';
 import indexRouter from './src/routes/index.js';  
 import { getResponseFromAI } from './src/vectorstore/retrieval.js';
 
