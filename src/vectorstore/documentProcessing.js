@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import { initializeMongoVectorStore } from './mongoVectorStore.js';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import mammoth from 'mammoth';
 import fs from 'fs';
 import OpenAI from 'openai';
 import path from 'path';
@@ -23,7 +24,7 @@ export async function processAndStoreDocument(textContent, originalName) {
         const chunks = await splitter.splitText(textContent);
 
         console.log('Number of chunks:', chunks.length);
-        console.log('First chunk:', chunks[0]);
+        // console.log('First chunk:', chunks[0]);
 
         if (chunks.length === 0) {
             throw new Error('Text splitting resulted in no chunks');
@@ -135,11 +136,20 @@ export async function transcribeAudioToText(audioPath) {
 
 export async function extractTextFromFile(filePath) {
     try {
-        const content = await fs.promises.readFile(filePath, 'utf8');
-        return content;
+        const fileExtension = filePath.split('.').pop().toLowerCase();
+
+        if (fileExtension === 'docx') {
+            
+            const result = await mammoth.extractRawText({ path: filePath });
+            return result.value; 
+        } else {
+            
+            const content = await fs.promises.readFile(filePath, 'utf8');
+            return content;
+        }
     } catch (error) {
         console.error('Error reading file:', error);
-        throw error; s
+        throw error;
     }
 }
 export async function processAudioVideo(filePath, originalName) {
