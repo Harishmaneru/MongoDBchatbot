@@ -2,10 +2,13 @@ import { spawn } from 'child_process';
 import { initializeMongoVectorStore } from './mongoVectorStore.js';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import mammoth from 'mammoth';
 import fs from 'fs';
 import OpenAI from 'openai';
 import path from 'path';
+import pdf from 'pdf-parse';
+import ExcelJS from 'exceljs';
+import mammoth from 'mammoth';
+
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
@@ -19,7 +22,6 @@ export async function processAndStoreDocument(textContent, originalName) {
 
         console.log('Processing document:', originalName);
 
-
         const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 200 });
         const chunks = await splitter.splitText(textContent);
 
@@ -30,10 +32,7 @@ export async function processAndStoreDocument(textContent, originalName) {
             throw new Error('Text splitting resulted in no chunks');
         }
 
-
         const vectorStore = await initializeMongoVectorStore(new OpenAIEmbeddings());
-
-
         const documents = chunks.map(chunk => ({
             pageContent: chunk,
             metadata: { source: originalName }
@@ -134,18 +133,40 @@ export async function transcribeAudioToText(audioPath) {
 }
 
 
+async function extractTextFromExcel(filePath) {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(filePath);
+    let fullText = '';
+
+    workbook.eachSheet((worksheet, sheetId) => {
+        fullText += `Sheet: ${worksheet.name}\n`;
+        worksheet.eachRow((row, rowNumber) => {
+            fullText += row.values.slice(1).join('\t') + '\n';
+        });
+        fullText += '\n';
+    });
+
+    return fullText;
+}
+
 export async function extractTextFromFile(filePath) {
     try {
-        const fileExtension = filePath.split('.').pop().toLowerCase();
+        const fileExtension = path.extname(filePath).toLowerCase();
 
-        if (fileExtension === 'docx') {
-            
+        if (fileExtension === '.pdf') {
+            const dataBuffer = await fs.promises.readFile(filePath);
+            const pdfData = await pdf(dataBuffer);
+            return pdfData.text;
+        } else if (fileExtension === '.docx') {
             const result = await mammoth.extractRawText({ path: filePath });
-            return result.value; 
-        } else {
-            
+            return result.value;
+        } else if (['.xlsx', '.xls'].includes(fileExtension)) {
+            return await extractTextFromExcel(filePath);
+        } else if (['.txt', '.md', '.json', '.js', '.py', '.html', '.css'].includes(fileExtension)) {
             const content = await fs.promises.readFile(filePath, 'utf8');
             return content;
+        } else {
+            throw new Error(`Unsupported file type: ${fileExtension}`);
         }
     } catch (error) {
         console.error('Error reading file:', error);
@@ -196,7 +217,7 @@ export async function processAudioVideo(filePath, originalName) {
             throw new Error('Transcription resulted in empty text');
         }
 
-        console.log('Transcribed text:', textContent);
+        // console.log('Transcribed text:', textContent);
 
 
         const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 200 });
