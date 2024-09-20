@@ -4,19 +4,29 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import { Server } from 'socket.io';
 import fs from 'fs';
-import http from 'http';   
 import https from 'https';
 import indexRouter from './src/routes/index.js';  
 import { getResponseFromAI } from './src/vectorstore/retrieval.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'src', 'public')));
 app.use('/', indexRouter);
-const server = https.createServer(app);   
+ 
+const options = {
+    key: fs.readFileSync('./onepgr.com.key', 'utf8'),
+    cert: fs.readFileSync('./STAR_onepgr_com.crt', 'utf8'),
+    ca: fs.readFileSync('./STAR_onepgr_com.ca-bundle', 'utf8')   
+};
+
+ 
+const server = https.createServer(options, app);
+ 
 const io = new Server(server);
 
 io.on('connection', (socket) => {
@@ -36,8 +46,8 @@ io.on('connection', (socket) => {
     });
 });
 
-// Start the server
+// Start the server on port 443 (HTTPS default)
 const PORT = process.env.PORT || 3002;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
