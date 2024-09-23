@@ -8,11 +8,9 @@ import path from 'path';
 import pdf from 'pdf-parse';
 import ExcelJS from 'exceljs';
 import mammoth from 'mammoth';
-
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
-
 export async function processAndStoreDocument(textContent, originalName) {
     try {
 
@@ -70,35 +68,82 @@ function convertVideoToAudio(videoPath, outputAudioPath) {
     });
 }
 
-function splitAudioFile(inputPath, outputDir, chunkSizeMB = 20) {
+// Function to get the duration of the audio file
+function getAudioDuration(inputPath) {
     return new Promise((resolve, reject) => {
-        const chunkDuration = chunkSizeMB * 60;
-        const outputPattern = path.join(outputDir, 'chunk_%03d.mp3');
-
-        const ffmpeg = spawn('ffmpeg', [
-            '-i', inputPath,
-            '-f', 'segment',
-            '-segment_time', chunkDuration,
-            '-c', 'copy',
-            outputPattern
-        ]);
+        const ffmpeg = spawn('ffmpeg', ['-i', inputPath]);
 
         ffmpeg.stderr.on('data', (data) => {
-            console.log(`FFmpeg: ${data}`);
+            const output = data.toString();
+            const match = output.match(/Duration: (\d+):(\d+):(\d+\.\d+)/);
+            if (match) {
+                const hours = parseInt(match[1], 10);
+                const minutes = parseInt(match[2], 10);
+                const seconds = parseFloat(match[3]);
+                const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                resolve(totalSeconds);
+            }
         });
 
         ffmpeg.on('close', (code) => {
-            if (code === 0) {
-                fs.readdir(outputDir, (err, files) => {
-                    if (err) reject(err);
-                    else resolve(files.filter(file => file.startsWith('chunk_')).map(file => path.join(outputDir, file)));
-                });
-            } else {
+            if (code !== 0) {
                 reject(new Error(`FFmpeg process exited with code ${code}`));
             }
         });
     });
 }
+
+ 
+export function splitAudioFile(inputPath, outputDir, maxChunkSizeMB = 20) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            
+            const duration = await getAudioDuration(inputPath);
+
+ 
+            const fileSizeMB = fs.statSync(inputPath).size / (1024 * 1024);  
+            const bitrate = (fileSizeMB * 8) / duration;  
+
+        
+            const chunkDuration = (maxChunkSizeMB * 8) / bitrate;
+
+            const outputPattern = path.join(outputDir, 'chunk_%03d.mp3');
+
+       
+            const ffmpeg = spawn('ffmpeg', [
+                '-i', inputPath,
+                '-f', 'segment',
+                '-segment_time', chunkDuration.toString(),
+                '-c', 'copy',
+                outputPattern
+            ]);
+
+            ffmpeg.stderr.on('data', (data) => {
+                console.log(`FFmpeg: ${data}`);
+            });
+
+            ffmpeg.on('close', (code) => {
+                if (code === 0) {
+             
+                    fs.readdir(outputDir, (err, files) => {
+                        if (err) reject(err);
+                        else {
+                            const chunkPaths = files
+                                .filter(file => file.startsWith('chunk_'))
+                                .map(file => path.join(outputDir, file));
+                            resolve(chunkPaths);
+                        }
+                    });
+                } else {
+                    reject(new Error(`FFmpeg process exited with code ${code}`));
+                }
+            });
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
 
 export async function transcribeAudioToText(audioPath) {
     try {
@@ -150,6 +195,7 @@ export async function extractTextFromFile(filePath) {
         if (fileExtension === '.pdf') {
             const dataBuffer = await fs.promises.readFile(filePath);
             const pdfData = await pdf(dataBuffer);
+            // console.log(pdfData.text)
             return pdfData.text;
         } else if (fileExtension === '.docx') {
             const result = await mammoth.extractRawText({ path: filePath });
@@ -167,6 +213,7 @@ export async function extractTextFromFile(filePath) {
         throw error;
     }
 }
+
 export async function processAudioVideo(filePath, originalName) {
     try {
         let textContent = '';
@@ -177,23 +224,28 @@ export async function processAudioVideo(filePath, originalName) {
 
             const tempDir = path.join(path.dirname(audioPath), 'temp_chunks');
             fs.mkdirSync(tempDir, { recursive: true });
-            const audioChunks = await splitAudioFile(audioPath, tempDir);
+            const audioChunks = await splitAudioFile(audioPath, tempDir, 20);  
+
             for (const chunk of audioChunks) {
                 const chunkText = await transcribeAudioToText(chunk);
                 textContent += chunkText + ' ';
-                fs.unlinkSync(chunk); 
+                fs.unlinkSync(chunk);  
             }
+
             fs.rmSync(tempDir, { recursive: true });
-            fs.unlinkSync(audioPath); 
+            fs.unlinkSync(audioPath);  
+
         } else if (originalName.endsWith('.mp3') || originalName.endsWith('.wav')) {
             const tempDir = path.join(path.dirname(filePath), 'temp_chunks');
             fs.mkdirSync(tempDir, { recursive: true });
-            const audioChunks = await splitAudioFile(filePath, tempDir);
+            const audioChunks = await splitAudioFile(filePath, tempDir, 20); 
+            console.log(audioChunks);
             for (const chunk of audioChunks) {
                 const chunkText = await transcribeAudioToText(chunk);
                 textContent += chunkText + ' ';
                 fs.unlinkSync(chunk); 
             }
+
             fs.rmSync(tempDir, { recursive: true });
         } else {
             throw new Error('Unsupported file format for audio/video processing');
@@ -205,8 +257,6 @@ export async function processAudioVideo(filePath, originalName) {
 
         const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 200 });
         const chunks = await splitter.splitText(textContent);
-
-        console.log('Number of chunks:', chunks.length);
 
         const vectorStore = await initializeMongoVectorStore(new OpenAIEmbeddings());
         const documents = chunks.map(chunk => ({
