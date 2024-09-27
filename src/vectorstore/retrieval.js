@@ -17,7 +17,7 @@ export async function createCustomRetrievalChain(question) {
     const response = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: messages,
-        max_tokens: 200,
+        max_tokens: 500,
     });
 
     if (response.choices && response.choices[0].message.content) {
@@ -31,7 +31,7 @@ export async function createCustomRetrievalChain(question) {
 export async function getResponseFromAI(message) {
     try {
       const userMessage = message.question.toLowerCase();
-      
+     // console.log('Received question:', userMessage);  
       // Handle greetings and general queries
       if (userMessage.match(/\b(hi|hello|hey)\b/i) || userMessage.match(/\bgood (morning|afternoon|evening)\b/i)) {
         return 'Hello! How can I assist you today?';
@@ -42,8 +42,6 @@ export async function getResponseFromAI(message) {
       if (nameMatch) {
         return `Hello, ${nameMatch[1]}! How can I assist you today?`;
       }
-      
-      // For specific questions, use RAG
       const response = await createCustomRetrievalChain(userMessage);
       
       // Check if the response is relevant

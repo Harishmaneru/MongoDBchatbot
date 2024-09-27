@@ -3,7 +3,7 @@ import multer from 'multer';
 import fs from 'fs';
 
 import { extractTextFromFile, processAudioVideo, processAndStoreDocument } from '../vectorstore/documentProcessing.js';
-import { createCustomRetrievalChain } from '../vectorstore/retrieval.js';
+// import { createCustomRetrievalChain } from '../vectorstore/retrieval.js';
 
 const router = express.Router();
 const storage = multer.diskStorage({
@@ -19,8 +19,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
-
-
 router.post('/KnowledgeBase', upload.single('file'), async (req, res) => {
     try {
         const file = req.file;
@@ -42,10 +40,7 @@ router.post('/KnowledgeBase', upload.single('file'), async (req, res) => {
         } else {
             return res.status(400).send({ message: 'Unsupported file type' });
         }
-
-
         fs.unlinkSync(file.path);
-
         res.status(200).send({
             message: 'File processed and uploaded successfully',
             fileName: file.originalname,
@@ -58,14 +53,20 @@ router.post('/KnowledgeBase', upload.single('file'), async (req, res) => {
 });
 
 
-router.post('/chat', async (req, res) => {
-    try {
-        const { question } = req.body;
-        const response = await createCustomRetrievalChain(question);
-        res.send({ message: response });
-    } catch (error) {
-        res.status(500).send({ error: 'Failed to retrieve answer' });
-    }
-});
+// router.post('/chat', async (req, res) => {
+//     try {
+//         const { question } = req.body;
+//         console.log('Received question:', question);  
+
+//         const response = await createCustomRetrievalChain(question);
+//         console.log('Generated response:', response);  
+
+//         res.send({ message: response });
+//     } catch (error) {
+//         console.error('Error in /chat route:', error);   
+//         res.status(500).send({ error: 'Failed to retrieve answer' });
+//     }
+// });
+
 
 export default router;
