@@ -26,29 +26,26 @@ export async function createCustomRetrievalChain(question) {
         throw new Error('No valid message content found in the API response');
     }
 }
-
-
 export async function getResponseFromAI(message) {
     try {
       const userMessage = message.question.toLowerCase();
-     // console.log('Received question:', userMessage);  
-      // Handle greetings and general queries
-      if (userMessage.match(/\b(hi|hello|hey)\b/i) || userMessage.match(/\bgood (morning|afternoon|evening)\b/i)) {
-        return 'Hello! How can I assist you today?';
+  
+      const combinedGreetingAndName = userMessage.match(/\b(hi|hello|hey)\b.*i(?:'| a|)m (\w+)/i);
+      if (combinedGreetingAndName) {
+         return `Hello, ${combinedGreetingAndName[2]}! How can I assist you today?`;
       }
-      
-      // Handle name introductions
-      const nameMatch = userMessage.match(/i(?:'| a)m (\w+)/i);
+      const nameMatch = userMessage.match(/i(?:'| a|)m (\w+)/i);
       if (nameMatch) {
         return `Hello, ${nameMatch[1]}! How can I assist you today?`;
       }
+      if (userMessage.match(/\b(hi|hello|hey)\b/i) || userMessage.match(/\bgood (morning|afternoon|evening)\b/i)) {
+          return 'Hello! How can I assist you today?';
+      }
       const response = await createCustomRetrievalChain(userMessage);
-      
       // Check if the response is relevant
       if (response.toLowerCase().includes("i don't have enough information") || response.length < 20) {
         return "I'm sorry, I don't have specific information about that. Is there something else I can help you with?";
       }
-      
       return response;
     } catch (error) {
       console.error('Error with AI response:', error);
