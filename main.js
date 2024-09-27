@@ -14,10 +14,11 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors({
-    origin: 'http://127.0.0.1:4200',   
+    origin: ['http://127.0.0.1:4200', 'https://chat-bot-ui-harishs-projects-01a8d1be.vercel.app'],
     methods: ['GET', 'POST'],
     credentials: true 
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'src', 'public')));
@@ -30,11 +31,9 @@ const options = {
 };
 
 const server = https.createServer(options, app);
-
- 
 const io = new Server(server, {
     cors: {
-        origin: 'http://127.0.0.1:4200',   
+        origin: ['http://127.0.0.1:4200', 'https://chat-bot-ui-harishs-projects-01a8d1be.vercel.app'],   
         methods: ['GET', 'POST'],
         credentials: true
     }
@@ -57,7 +56,6 @@ io.on('connection', (socket) => {
         console.log('A user has disconnected');
     });
 });
-
 const PORT = process.env.PORT || 3002;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
