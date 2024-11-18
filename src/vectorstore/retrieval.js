@@ -32,14 +32,14 @@ export async function getResponseFromAI(message) {
   
       const combinedGreetingAndName = userMessage.match(/\b(hi|hello|hey)\b.*i(?:'| a|)m (\w+)/i);
       if (combinedGreetingAndName) {
-         return `Hello, ${combinedGreetingAndName[2]}! How can I assist you today?`;
+         return `👋\u{1F44B} Hello, ${combinedGreetingAndName[2]}! How can I assist you today?`;
       }
       const nameMatch = userMessage.match(/i(?:'| a|)m (\w+)/i);
       if (nameMatch) {
-        return `Hello, ${nameMatch[1]}! How can I assist you today?`;
+        return `👋\u{1F44B} Hello, ${nameMatch[1]}! How can I assist you today?`;
       }
       if (userMessage.match(/\b(hi|hello|hey)\b/i) || userMessage.match(/\bgood (morning|afternoon|evening)\b/i)) {
-          return 'Hello! How can I assist you today?';
+          return '👋\u{1F44B} Hello! How can I assist you today?';
       }
       const response = await createCustomRetrievalChain(userMessage);
       // Check if the response is relevant

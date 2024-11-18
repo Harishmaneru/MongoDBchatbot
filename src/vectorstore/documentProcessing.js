@@ -164,7 +164,7 @@ export async function transcribeAudioToText(audioPath) {
         if (!response || !response.text) {
             throw new Error('Unexpected API response format');
         }
-
+     //   console.log('Transcribed Text:', response.text);
         return response.text;
     } catch (error) {
         console.error('Error transcribing audio:', error);
